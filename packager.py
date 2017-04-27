@@ -9,21 +9,46 @@ import shutil
 import os.path
 import hashlib
 import base64
+import tempfile
+import zipfile
+
+class Sandbox:
+    def __init__(self):
+        self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
+
+    def _zip_visit(self, zf, dirname, names):
+        for name in names:
+            zf.write(os.path.join(dirname, name), name)
+
+    def system(self, cmd):
+        cwd = os.getcwd()
+        os.chdir(self.dir)
+        result = os.system(cmd)
+        os.chdir(cwd)
+        return result
+
+    def zip(self, output_filename):
+        zf = zipfile.ZipFile(output_filename, 'w')
+        os.path.walk(self.dir, self._zip_visit, zf)
+        zf.close()
+
+    def delete(self):
+        try:
+            shutil.rmtree(self.dir)
+        except:
+            pass
 
 class Packager:
     def __init__(self, input_values):
         self.input = input_values
         self.start_dir = os.getcwd()
-        self.code = os.path.join(self.start_dir, input_values["code"])
-        self.basename = os.path.splitext(self.code)[0]
+        self.code = input_values["code"]
+        self.basename = os.path.join(self.start_dir, os.path.splitext(self.code)[0])
         self.source_dir = os.path.dirname(self.code)
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
             return self.input['output_filename']
-        return self.zipfile()
-
-    def zipfile(self):
         return self.basename + '.zip'
 
     def clean_tree(self):
@@ -36,22 +61,20 @@ class Packager:
         return os.path.join(self.source_dir, 'requirements.txt')
 
     def package(self):
-        self.clean_tree()
-        os.mkdir(self.basename)
-        shutil.copy(self.code, self.basename)
-        with open(os.path.join(self.basename, 'setup.cfg'), 'w') as f:
+        sb = Sandbox()
+        shutil.copy(self.code, sb.dir)
+        with open(os.path.join(sb.dir, 'setup.cfg'), 'w') as f:
             f.write("[install]\nprefix=\n")
+        output_filename = os.path.join(os.getcwd(), self.output_filename())
         try:
-            os.remove(self.zipfile())
+            os.remove(output_filename)
         except:
             pass
-        output_filename = os.path.join(os.getcwd(), self.output_filename())
-        os.chdir(self.basename)
         if os.path.isfile(self.requirements_file()):
-            os.system('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(os.getcwd()))
-        os.system('zip -9r {} . >/dev/null'.format(output_filename))
-        os.chdir(self.start_dir)
-        self.clean_tree()
+            sb.system('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(sb.dir))
+
+        sb.zip(output_filename)
+        sb.delete()
 
     def output_base64sha256(self):
         with open(self.output_filename(), 'r') as f:
