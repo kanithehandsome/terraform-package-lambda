@@ -79,15 +79,9 @@ class Packager:
         for path in self.paths_to_package():
             sb.import_path(path)
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
-        output_filename = os.path.join(os.getcwd(), self.output_filename())
-        try:
-            os.remove(output_filename)
-        except:
-            pass
         if os.path.isfile(self.requirements_file()):
             sb.run_command('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(sb.dir))
-
-        sb.zip(output_filename)
+        sb.zip(self.output_filename())
         sb.delete()
 
     def output_base64sha256(self):
