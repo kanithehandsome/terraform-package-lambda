@@ -16,7 +16,7 @@ class Sandbox:
     def __init__(self):
         self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
 
-    def system(self, cmd):
+    def run_command(self, cmd):
         cwd = os.getcwd()
         os.chdir(self.dir)
         result = os.system(cmd)
@@ -79,7 +79,7 @@ class Packager:
         except:
             pass
         if os.path.isfile(self.requirements_file()):
-            sb.system('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(sb.dir))
+            sb.run_command('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(sb.dir))
 
         sb.zip(output_filename)
         sb.delete()
