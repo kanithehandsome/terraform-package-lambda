@@ -34,3 +34,10 @@ class TestPackager(unittest.TestCase):
             "extra_files": [ "extra.txt" ]
         })
         self.assertEquals(result["zip_contents"]["extra.txt"], "Extra File!\n")
+
+    def test_packages_extra_directories(self):
+        result = do({
+            "code": "test/python-simple/foo.py",
+            "extra_files": [ "extra-dir" ]
+        })
+        self.assertEquals(result["zip_contents"]["extra-dir/dir.txt"], "Dir File!\n")

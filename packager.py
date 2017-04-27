@@ -25,7 +25,12 @@ class Sandbox:
 
     def _zip_visit(self, zf, dirname, names):
         for name in names:
-            zf.write(os.path.join(dirname, name), name)
+            src = os.path.join(dirname, name)
+            if dirname == self.dir:
+                dst = name
+            else:
+                dst = os.path.join(dirname[len(self.dir)+1:], name)
+            zf.write(src, dst)
 
     def zip(self, output_filename):
         zf = zipfile.ZipFile(output_filename, 'w')
@@ -62,7 +67,10 @@ class Packager:
     def package(self):
         sb = Sandbox()
         for filename in self.files_to_package():
-            shutil.copy(filename, sb.dir)
+            if os.path.isdir(filename):
+                shutil.copytree(filename, os.path.join(sb.dir, os.path.basename(filename)))
+            else:
+                shutil.copy(filename, sb.dir)
         with open(os.path.join(sb.dir, 'setup.cfg'), 'w') as f:
             f.write("[install]\nprefix=\n")
         output_filename = os.path.join(os.getcwd(), self.output_filename())
