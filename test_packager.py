@@ -20,3 +20,10 @@ class TestPackager(unittest.TestCase):
     def test_packages_a_python_script_with_no_dependencies(self):
         result = do({"code": "test/python-simple/foo.py"})
         self.assertEquals(result["zip_contents"]["foo.py"], "# Hello, Python!\n")
+
+    def test_uses_specified_output_filename(self):
+        result = do({
+            "code": "test/python-simple/foo.py",
+            "output_filename": "test/foo-x.zip"
+        })
+        self.assertEquals(result["output"]["output_filename"], "test/foo-x.zip")

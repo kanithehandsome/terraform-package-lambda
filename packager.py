@@ -12,10 +12,16 @@ import base64
 
 class Packager:
     def __init__(self, input_values):
+        self.input = input_values
         self.start_dir = os.getcwd()
         self.code = os.path.join(self.start_dir, input_values["code"])
         self.basename = os.path.splitext(self.code)[0]
         self.source_dir = os.path.dirname(self.code)
+
+    def output_filename(self):
+        if self.input.has_key('output_filename'):
+            return self.input['output_filename']
+        return self.zipfile()
 
     def zipfile(self):
         return self.basename + '.zip'
@@ -39,22 +45,23 @@ class Packager:
             os.remove(self.zipfile())
         except:
             pass
+        output_filename = os.path.join(os.getcwd(), self.output_filename())
         os.chdir(self.basename)
         if os.path.isfile(self.requirements_file()):
             os.system('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(os.getcwd()))
-        os.system('zip -9r {} . >/dev/null'.format(self.zipfile()))
+        os.system('zip -9r {} . >/dev/null'.format(output_filename))
         os.chdir(self.start_dir)
         self.clean_tree()
 
     def output_base64sha256(self):
-        with open(self.zipfile(), 'r') as f:
+        with open(self.output_filename(), 'r') as f:
             contents = f.read()
         return base64.b64encode(hashlib.sha256(contents).digest())
 
     def output(self):
         return {
           "code": self.code,
-          "output_filename": self.zipfile(),
+          "output_filename": self.output_filename(),
           "output_base64sha256": self.output_base64sha256()
         }
 
