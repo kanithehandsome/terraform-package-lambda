@@ -49,3 +49,8 @@ class TestPackager(unittest.TestCase):
     def test_packages_a_node_script_with_no_dependencies(self):
         result = do({"code": "test/node-simple/foo.js"})
         self.assertEquals(result["zip_contents"]["foo.js"], "// Hello, Node!\n")
+
+    def test_packages_a_node_script_with_dependencies(self):
+        result = do({"code": "test/node-deps/foo.js"})
+        self.assertTrue(result["zip_contents"].has_key("node_modules/"))
+        self.assertTrue(result["zip_contents"].has_key("node_modules/underscore/"))

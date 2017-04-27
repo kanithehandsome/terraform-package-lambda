@@ -59,10 +59,39 @@ class Sandbox:
         except:
             pass
 
+class PythonRequirements:
+    def requirements_file(self):
+        return 'requirements.txt'
+
+    def collect(self, sb, source_path):
+        requirements_file = os.path.join(source_path, self.requirements_file())
+        sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
+        sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+
+class NodeRequirements:
+    def requirements_file(self):
+        return 'package.json'
+
+    def collect(self, sb, source_path):
+        sb.import_path(os.path.join(source_path, 'package.json'))
+        sb.run_command('npm install --production >/dev/null 2>&1')
+
 class Packager:
     def __init__(self, input_values):
         self.input = input_values
         self.code = self.input["code"]
+
+    def code_type(self):
+        return os.path.splitext(self.code)[1]
+
+    def requirements(self):
+        code_type = self.code_type()
+        if code_type == '.py':
+            return PythonRequirements()
+        elif code_type == '.js':
+            return NodeRequirements()
+        else:
+            raise Exception("Unknown code type '{}'".format(self.code_type()))
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
@@ -71,7 +100,7 @@ class Packager:
 
     def requirements_file(self):
         source_dir = os.path.dirname(self.code)
-        return os.path.join(source_dir, 'requirements.txt')
+        return os.path.join(source_dir, self.requirements().requirements_file())
 
     def paths_to_import(self):
         yield self.code
@@ -84,8 +113,8 @@ class Packager:
         requirements_file = os.path.join(os.getcwd(), self.requirements_file())
         if not os.path.isfile(requirements_file):
             return
-        sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
-        sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+        source_dir = os.path.join(os.getcwd(), os.path.dirname(self.code))
+        self.requirements().collect(sb, source_dir)
 
     def package(self):
         sb = Sandbox()
