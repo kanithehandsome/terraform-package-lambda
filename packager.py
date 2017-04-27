@@ -23,6 +23,12 @@ class Sandbox:
         os.chdir(cwd)
         return result
 
+    def add_path(self, path):
+        if os.path.isdir(path):
+            shutil.copytree(path, os.path.join(self.dir, os.path.basename(path)))
+        else:
+            shutil.copy(path, self.dir)
+
     def _zip_visit(self, zf, dirname, names):
         for name in names:
             src = os.path.join(dirname, name)
@@ -67,10 +73,7 @@ class Packager:
     def package(self):
         sb = Sandbox()
         for filename in self.files_to_package():
-            if os.path.isdir(filename):
-                shutil.copytree(filename, os.path.join(sb.dir, os.path.basename(filename)))
-            else:
-                shutil.copy(filename, sb.dir)
+            sb.add_path(filename)
         with open(os.path.join(sb.dir, 'setup.cfg'), 'w') as f:
             f.write("[install]\nprefix=\n")
         output_filename = os.path.join(os.getcwd(), self.output_filename())
