@@ -52,9 +52,17 @@ class Packager:
         source_dir = os.path.dirname(self.code)
         return os.path.join(source_dir, 'requirements.txt')
 
+    def files_to_package(self):
+        yield self.code
+        source_dir = os.path.dirname(self.code)
+        if self.input.has_key("extra_files"):
+            for extra_file in self.input["extra_files"]:
+                yield os.path.join(source_dir, extra_file)
+
     def package(self):
         sb = Sandbox()
-        shutil.copy(self.code, sb.dir)
+        for filename in self.files_to_package():
+            shutil.copy(filename, sb.dir)
         with open(os.path.join(sb.dir, 'setup.cfg'), 'w') as f:
             f.write("[install]\nprefix=\n")
         output_filename = os.path.join(os.getcwd(), self.output_filename())

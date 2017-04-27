@@ -14,7 +14,8 @@ module "lambda-package" {
    * replaced with ".zip" */
   output_filename = "my_lambda.zip"
 
-  /* Optional, specifies additional files to include. */
+  /* Optional, specifies additional files to include.  These are relative
+   * to the location of the code. */
   extra_files = [ "data-file.txt", "extra-dir" ]
 }
 

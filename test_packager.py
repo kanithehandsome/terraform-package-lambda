@@ -27,3 +27,10 @@ class TestPackager(unittest.TestCase):
             "output_filename": "test/foo-x.zip"
         })
         self.assertEquals(result["output"]["output_filename"], "test/foo-x.zip")
+
+    def test_packages_extra_files(self):
+        result = do({
+            "code": "test/python-simple/foo.py",
+            "extra_files": [ "extra.txt" ]
+        })
+        self.assertEquals(result["zip_contents"]["extra.txt"], "Extra File!\n")
