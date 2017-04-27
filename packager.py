@@ -29,6 +29,10 @@ class Sandbox:
         else:
             shutil.copy(path, self.dir)
 
+    def add_file_string(self, path, contents):
+        with open(os.path.join(self.dir, path), 'w') as f:
+            f.write(contents)
+
     def _zip_visit(self, zf, dirname, names):
         for name in names:
             src = os.path.join(dirname, name)
@@ -74,8 +78,7 @@ class Packager:
         sb = Sandbox()
         for filename in self.files_to_package():
             sb.add_path(filename)
-        with open(os.path.join(sb.dir, 'setup.cfg'), 'w') as f:
-            f.write("[install]\nprefix=\n")
+        sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         output_filename = os.path.join(os.getcwd(), self.output_filename())
         try:
             os.remove(output_filename)
