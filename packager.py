@@ -41,17 +41,16 @@ class Sandbox:
 class Packager:
     def __init__(self, input_values):
         self.input = input_values
-        self.start_dir = os.getcwd()
-        self.code = input_values["code"]
-        self.source_dir = os.path.dirname(self.code)
+        self.code = self.input["code"]
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
             return self.input['output_filename']
-        return os.path.splitext(self.input["code"])[0] + ".zip"
+        return os.path.splitext(self.code)[0] + ".zip"
 
     def requirements_file(self):
-        return os.path.join(self.source_dir, 'requirements.txt')
+        source_dir = os.path.dirname(self.code)
+        return os.path.join(source_dir, 'requirements.txt')
 
     def package(self):
         sb = Sandbox()
