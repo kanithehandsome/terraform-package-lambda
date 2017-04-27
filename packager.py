@@ -16,16 +16,16 @@ class Sandbox:
     def __init__(self):
         self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
 
-    def _zip_visit(self, zf, dirname, names):
-        for name in names:
-            zf.write(os.path.join(dirname, name), name)
-
     def system(self, cmd):
         cwd = os.getcwd()
         os.chdir(self.dir)
         result = os.system(cmd)
         os.chdir(cwd)
         return result
+
+    def _zip_visit(self, zf, dirname, names):
+        for name in names:
+            zf.write(os.path.join(dirname, name), name)
 
     def zip(self, output_filename):
         zf = zipfile.ZipFile(output_filename, 'w')
