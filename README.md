@@ -9,13 +9,18 @@ all the work in packaging an AWS lambda.
 module "lambda-package" {
   source = "github.com/2uinc/terraform-package-lambda"
   code = "my_lambda.py"
-  output = "my_lambda.zip"
+
+  /* Optional, defaults to the value of $code, except the extension is
+   * replaced with ".zip" */
+  output_filename = "my_lambda.zip"
+
+  /* Optional, specifies additional files to include. */
   extra_files = [ "data-file.txt", "extra-dir" ]
 }
 
 resource "aws_lambda_function" "my_lambda" {
   ...
-  filename = "my_lambda.zip"
+  filename = "${module.lambda-package.output_filename}"
   source_code_hash = "${module.lambda-package.output_base64sha256}"
   ...
 }
