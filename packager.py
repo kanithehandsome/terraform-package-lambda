@@ -13,8 +13,9 @@ import base64
 class Packager:
     def __init__(self, input_values):
         self.start_dir = os.getcwd()
-        self.basename = os.path.join(self.start_dir, input_values["basename"])
-        self.source_dir = os.path.dirname(self.basename)
+        self.code = os.path.join(self.start_dir, input_values["code"])
+        self.basename = os.path.splitext(self.code)[0]
+        self.source_dir = os.path.dirname(self.code)
 
     def zipfile(self):
         return self.basename + '.zip'
@@ -31,7 +32,7 @@ class Packager:
     def package(self):
         self.clean_tree()
         os.mkdir(self.basename)
-        shutil.copy(self.basename + ".py", self.basename)
+        shutil.copy(self.code, self.basename)
         with open(os.path.join(self.basename, 'setup.cfg'), 'w') as f:
             f.write("[install]\nprefix=\n")
         try:
@@ -52,9 +53,8 @@ class Packager:
 
     def output(self):
         return {
-          "basename": self.basename,
-          "runtime": "python2.7",
-          "filename": self.zipfile(),
+          "code": self.code,
+          "output_filename": self.zipfile(),
           "output_base64sha256": self.output_base64sha256()
         }
 
