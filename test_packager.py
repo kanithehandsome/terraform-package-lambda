@@ -41,3 +41,7 @@ class TestPackager(unittest.TestCase):
             "extra_files": [ "extra-dir" ]
         })
         self.assertEquals(result["zip_contents"]["extra-dir/dir.txt"], "Dir File!\n")
+
+    def test_installs_python_requirements(self):
+        result = do({"code": "test/python-deps/foo.py"})
+        self.assertTrue(result["zip_contents"].has_key("mock/__init__.py"))
