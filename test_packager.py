@@ -45,3 +45,7 @@ class TestPackager(unittest.TestCase):
     def test_installs_python_requirements(self):
         result = do({"code": "test/python-deps/foo.py"})
         self.assertTrue(result["zip_contents"].has_key("mock/__init__.py"))
+
+    def test_packages_a_node_script_with_no_dependencies(self):
+        result = do({"code": "test/node-simple/foo.js"})
+        self.assertEquals(result["zip_contents"]["foo.js"], "// Hello, Node!\n")
