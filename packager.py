@@ -43,19 +43,12 @@ class Packager:
         self.input = input_values
         self.start_dir = os.getcwd()
         self.code = input_values["code"]
-        self.basename = os.path.join(self.start_dir, os.path.splitext(self.code)[0])
         self.source_dir = os.path.dirname(self.code)
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
             return self.input['output_filename']
-        return self.basename + '.zip'
-
-    def clean_tree(self):
-        try:
-            shutil.rmtree(self.basename)
-        except:
-            pass
+        return os.path.splitext(self.input["code"])[0] + ".zip"
 
     def requirements_file(self):
         return os.path.join(self.source_dir, 'requirements.txt')
