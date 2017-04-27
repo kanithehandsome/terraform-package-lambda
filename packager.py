@@ -13,6 +13,12 @@ import tempfile
 import zipfile
 
 class Sandbox:
+    '''
+    A temporary directory for staging a lambda package.
+
+    We import files, write new files, and run commands in the Sandbox to
+    produce the image we want to zip for the lambda.
+    '''
     def __init__(self):
         self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
 
