@@ -80,13 +80,18 @@ class Packager:
             for extra_file in self.input["extra_files"]:
                 yield os.path.join(source_dir, extra_file)
 
+    def _add_requirements(self, sb):
+        requirements_file = os.path.join(os.getcwd(), self.requirements_file())
+        if not os.path.isfile(requirements_file):
+            return
+        sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
+        sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+
     def package(self):
         sb = Sandbox()
         for path in self.paths_to_import():
             sb.import_path(path)
-        if os.path.isfile(self.requirements_file()):
-            sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
-            sb.run_command('pip install -r ../requirements.txt -t {}/ >/dev/null'.format(sb.dir))
+        self._add_requirements(sb)
         sb.zip(self.output_filename())
         sb.delete()
 
