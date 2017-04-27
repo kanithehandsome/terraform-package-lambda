@@ -19,10 +19,10 @@ module "lambda-package" {
 }
 
 resource "aws_lambda_function" "my_lambda" {
-  ...
+  /* ... */
   filename = "${module.lambda-package.output_filename}"
   source_code_hash = "${module.lambda-package.output_base64sha256}"
-  ...
+  /* ... */
 }
 ```
 
