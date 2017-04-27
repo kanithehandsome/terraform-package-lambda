@@ -25,3 +25,7 @@ resource "aws_lambda_function" "my_lambda" {
   ...
 }
 ```
+
+## Developing
+
+Run tests with `python -munittest discover`.
