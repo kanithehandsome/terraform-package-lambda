@@ -3,6 +3,8 @@ import packager
 import zipfile
 import time
 
+import os #FIXME
+
 def do(input_values):
     if not input_values.has_key("output_filename"):
         input_values["output_filename"] = ""
@@ -71,3 +73,11 @@ class TestPackager(unittest.TestCase):
         result = do({"code": "test/node-deps/foo.js"})
         self.assertTrue(result["zip_contents"].has_key("node_modules/"))
         self.assertTrue(result["zip_contents"].has_key("node_modules/underscore/"))
+
+    def test_packaging_node_with_dependencies_twice_produces_same_hash(self):
+        result1 = do({"code": "test/node-deps/foo.js"})
+        os.system("cp test/node-deps/foo.zip /tmp/a.zip")
+        time.sleep(2) # Allow for current time to "infect" result
+        result2 = do({"code": "test/node-deps/foo.js"})
+        os.system("cp test/node-deps/foo.zip /tmp/b.zip")
+        self.assertEquals(result1["output"]["output_base64sha256"], result2["output"]["output_base64sha256"])

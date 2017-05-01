@@ -132,7 +132,19 @@ class NodeRequirementsCollector(RequirementsCollector):
         if not os.path.isfile(requirements_file):
             return
         sb.import_path(self._source_requirements_file())
-        sb.run_command('npm install --production >/dev/null 2>&1')
+        sbm = SandboxMtimeDecorator(sb, self._requirements_mtime())
+        sbm.run_command('npm install --production >/dev/null 2>&1')
+        for filename in sbm.files():
+            if not filename.endswith('package.json'):
+                continue
+            full_path = os.path.join(sbm.dir, filename)
+            mtime = os.stat(full_path).st_mtime
+            with open(full_path, 'rb') as f:
+                contents = f.read()
+            contents = contents.replace(str(sb.dir), '/tmp/lambda-package')
+            with open(full_path, 'wb') as f:
+                f.write(contents)
+            os.utime(full_path, (mtime, mtime))
 
 class Packager:
     def __init__(self, input_values):
