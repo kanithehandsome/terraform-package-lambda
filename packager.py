@@ -70,6 +70,22 @@ class Sandbox:
         except:
             pass
 
+
+class SandboxMtimeDecorator:
+    '''A decorator for Sandbox which sets all files newly created by some command to `mtime'.'''
+    def __init__(self, sb, mtime):
+        self.sb = sb
+        self.mtime = mtime
+        self.before_files = set(self.sb.files())
+
+    def __getattr__(self, name):
+        return getattr(self.sb, name)
+
+    def run_command(self, cmd):
+        self.sb.run_command(cmd)
+        for filename in set(self.sb.files()).difference(self.before_files):
+            os.utime(os.path.join(self.sb.dir, filename), (self.mtime, self.mtime))
+
 class Requirements:
     def __init__(self, code):
         self.code = code
@@ -103,15 +119,9 @@ class PythonRequirements(Requirements):
             return
         mtime = self._requirements_mtime()
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
-        files_before = set(sb.files())
-        sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
-        files_added = set(sb.files()).difference(files_before)
-        for filename in files_added:
-            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
-        sb.run_command('python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
-        files_added = set(sb.files()).difference(files_before)
-        for filename in files_added:
-            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
+        sbm = SandboxMtimeDecorator(sb, mtime)
+        sbm.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+        sbm.run_command('python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
 
 class NodeRequirements(Requirements):
     def _requirements_file(self):
