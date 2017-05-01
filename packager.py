@@ -123,8 +123,13 @@ class Packager:
         requirements_file = os.path.join(os.getcwd(), self.requirements_file())
         if not os.path.isfile(requirements_file):
             return
+        mtime = os.stat(requirements_file).st_mtime
+        files_before = set(sb.files())
         source_dir = os.path.join(os.getcwd(), os.path.dirname(self.code))
         self.requirements().collect(sb, source_dir)
+        files_after = set(sb.files())
+        for filename in files_after.difference(files_before):
+            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
 
     def package(self):
         sb = Sandbox()
