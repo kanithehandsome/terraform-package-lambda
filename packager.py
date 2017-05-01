@@ -43,18 +43,24 @@ class Sandbox:
             f.write(contents)
         os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
 
-    def _zip_visit(self, zf, dirname, names):
+    def _files_visit(self, result, dirname, names):
         for name in names:
             src = os.path.join(dirname, name)
             if dirname == self.dir:
                 dst = name
             else:
                 dst = os.path.join(dirname[len(self.dir)+1:], name)
-            zf.write(src, dst)
+            result.append(dst)
+
+    def files(self):
+        result = []
+        os.path.walk(self.dir, self._files_visit, result)
+        return result
 
     def zip(self, output_filename):
         zf = zipfile.ZipFile(output_filename, 'w')
-        os.path.walk(self.dir, self._zip_visit, zf)
+        for filename in self.files():
+            zf.write(os.path.join(self.dir, filename), filename)
         zf.close()
 
     def delete(self):
