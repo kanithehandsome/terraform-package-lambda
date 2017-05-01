@@ -77,15 +77,21 @@ class Requirements:
     def _source_path(self):
         return os.path.join(os.getcwd(), os.path.dirname(self.code))
 
+    def _source_requirements_file(self):
+        return os.path.join(self._source_path(), self._requirements_file())
+
+    def _requirements_mtime(self):
+        return os.stat(self._source_requirements_file()).st_mtime
+
 class PythonRequirements(Requirements):
-    def requirements_file(self):
+    def _requirements_file(self):
         return 'requirements.txt'
 
     def collect(self, sb):
-        requirements_file = os.path.join(self._source_path(), self.requirements_file())
+        requirements_file = self._source_requirements_file()
         if not os.path.isfile(requirements_file):
             return
-        mtime = os.stat(requirements_file).st_mtime
+        mtime = self._requirements_mtime()
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         files_before = set(sb.files())
         sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
@@ -98,14 +104,14 @@ class PythonRequirements(Requirements):
             os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
 
 class NodeRequirements(Requirements):
-    def requirements_file(self):
+    def _requirements_file(self):
         return 'package.json'
 
     def collect(self, sb):
-        requirements_file = os.path.join(self._source_path(), self.requirements_file())
+        requirements_file = self._source_requirements_file()
         if not os.path.isfile(requirements_file):
             return
-        sb.import_path(os.path.join(self._source_path(), self.requirements_file()))
+        sb.import_path(self._source_requirements_file())
         sb.run_command('npm install --production >/dev/null 2>&1')
 
 class Packager:
