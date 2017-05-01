@@ -150,6 +150,9 @@ class Packager:
     def __init__(self, input_values):
         self.input = input_values
         self.code = self.input["code"]
+        self.extra_files = []
+        if len(self.input.get('extra_files', '')) > 0:
+            self.extra_files = self.input['extra_files'].split(',')
 
     def output_filename(self):
         if self.input.get('output_filename', '') != '':
@@ -159,9 +162,8 @@ class Packager:
     def paths_to_import(self):
         yield self.code
         source_dir = os.path.dirname(self.code)
-        if self.input.has_key("extra_files"):
-            for extra_file in self.input["extra_files"]:
-                yield os.path.join(source_dir, extra_file)
+        for extra_file in self.extra_files:
+            yield os.path.join(source_dir, extra_file)
 
     def package(self):
         sb = Sandbox()

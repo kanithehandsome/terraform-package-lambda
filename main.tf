@@ -16,7 +16,7 @@ data "external" "lambda_packager" {
   query = {
     code = "${var.code}"
     output_filename = "${var.output_filename}"
-    extra_files = [ "${var.extra_files}" ]
+    extra_files = "${join(",", var.extra_files)}"
   }
 }
 

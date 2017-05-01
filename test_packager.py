@@ -9,7 +9,7 @@ def do(input_values):
     if not input_values.has_key("output_filename"):
         input_values["output_filename"] = ""
     if not input_values.has_key("extra_files"):
-        input_values["extra_files"] = []
+        input_values["extra_files"] = ''
     p = packager.Packager(input_values)
     p.package()
     output = p.output()
@@ -44,14 +44,14 @@ class TestPackager(unittest.TestCase):
     def test_packages_extra_files(self):
         result = do({
             "code": "test/python-simple/foo.py",
-            "extra_files": [ "extra.txt" ]
+            "extra_files": "extra.txt"
         })
         self.assertEquals(result["zip_contents"]["extra.txt"], "Extra File!\n")
 
     def test_packages_extra_directories(self):
         result = do({
             "code": "test/python-simple/foo.py",
-            "extra_files": [ "extra-dir" ]
+            "extra_files": "extra.txt,extra-dir"
         })
         self.assertEquals(result["zip_contents"]["extra-dir/dir.txt"], "Dir File!\n")
 
