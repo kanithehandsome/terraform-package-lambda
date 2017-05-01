@@ -86,7 +86,7 @@ class SandboxMtimeDecorator:
         for filename in set(self.sb.files()).difference(self.before_files):
             os.utime(os.path.join(self.sb.dir, filename), (self.mtime, self.mtime))
 
-class Requirements:
+class RequirementsCollector:
     def __init__(self, code):
         self.code = code
 
@@ -100,16 +100,16 @@ class Requirements:
         return os.stat(self._source_requirements_file()).st_mtime
 
     @staticmethod
-    def requirements(code):
+    def collector(code):
         code_type = os.path.splitext(code)[1]
         if code_type == '.py':
-            return PythonRequirements(code)
+            return PythonRequirementsCollector(code)
         elif code_type == '.js':
-            return NodeRequirements(code)
+            return NodeRequirementsCollector(code)
         else:
             raise Exception("Unknown code type '{}'".format(code_type))
 
-class PythonRequirements(Requirements):
+class PythonRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'requirements.txt'
 
@@ -123,7 +123,7 @@ class PythonRequirements(Requirements):
         sbm.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
         sbm.run_command('python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
 
-class NodeRequirements(Requirements):
+class NodeRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'package.json'
 
@@ -155,7 +155,7 @@ class Packager:
         sb = Sandbox()
         for path in self.paths_to_import():
             sb.import_path(path)
-        Requirements.requirements(self.code).collect(sb)
+        RequirementsCollector.collector(self.code).collect(sb)
         sb.zip(self.output_filename())
         sb.delete()
 
