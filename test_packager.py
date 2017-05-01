@@ -24,7 +24,7 @@ class TestPackager(unittest.TestCase):
 
     def test_packaging_source_without_dependencies_twice_produces_the_same_hash(self):
         result1 = do({"code": "test/python-simple/foo.py"})
-        time.sleep(2)
+        time.sleep(2) # Allow for current time to "infect" result
         result2 = do({"code": "test/python-simple/foo.py"})
         self.assertEquals(result1["output"]["output_base64sha256"], result2["output"]["output_base64sha256"])
 
@@ -52,6 +52,12 @@ class TestPackager(unittest.TestCase):
     def test_installs_python_requirements(self):
         result = do({"code": "test/python-deps/foo.py"})
         self.assertTrue(result["zip_contents"].has_key("mock/__init__.py"))
+
+    def test_packaging_python_with_requirements_twice_produces_the_same_hsah(self):
+        result1 = do({"code": "test/python-deps/foo.py"})
+        time.sleep(2) # Allow for current time to "infect" result
+        result2 = do({"code": "test/python-deps/foo.py"})
+        self.assertEquals(result1["output"]["output_base64sha256"], result2["output"]["output_base64sha256"])
 
     def test_packages_a_node_script_with_no_dependencies(self):
         result = do({"code": "test/node-simple/foo.js"})

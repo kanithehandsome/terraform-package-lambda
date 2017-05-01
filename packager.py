@@ -4,9 +4,10 @@
 #
 
 import sys
+import os
+import os.path
 import json
 import shutil
-import os.path
 import hashlib
 import base64
 import tempfile
@@ -75,8 +76,17 @@ class PythonRequirements:
 
     def collect(self, sb, source_path):
         requirements_file = os.path.join(source_path, self.requirements_file())
+        mtime = os.stat(requirements_file).st_mtime
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
+        files_before = set(sb.files())
         sb.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+        files_added = set(sb.files()).difference(files_before)
+        for filename in files_added:
+            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
+        sb.run_command('python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
+        files_added = set(sb.files()).difference(files_before)
+        for filename in files_added:
+            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
 
 class NodeRequirements:
     def requirements_file(self):
@@ -123,13 +133,8 @@ class Packager:
         requirements_file = os.path.join(os.getcwd(), self.requirements_file())
         if not os.path.isfile(requirements_file):
             return
-        mtime = os.stat(requirements_file).st_mtime
-        files_before = set(sb.files())
         source_dir = os.path.join(os.getcwd(), os.path.dirname(self.code))
         self.requirements().collect(sb, source_dir)
-        files_after = set(sb.files())
-        for filename in files_after.difference(files_before):
-            os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
 
     def package(self):
         sb = Sandbox()
