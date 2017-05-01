@@ -70,12 +70,19 @@ class Sandbox:
         except:
             pass
 
-class PythonRequirements:
+class Requirements:
+    def __init__(self, code):
+        self.code = code
+
+    def _source_path(self):
+        return os.path.join(os.getcwd(), os.path.dirname(self.code))
+
+class PythonRequirements(Requirements):
     def requirements_file(self):
         return 'requirements.txt'
 
-    def collect(self, sb, source_path):
-        requirements_file = os.path.join(source_path, self.requirements_file())
+    def collect(self, sb):
+        requirements_file = os.path.join(self._source_path(), self.requirements_file())
         mtime = os.stat(requirements_file).st_mtime
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         files_before = set(sb.files())
@@ -88,12 +95,12 @@ class PythonRequirements:
         for filename in files_added:
             os.utime(os.path.join(sb.dir, filename), (mtime, mtime))
 
-class NodeRequirements:
+class NodeRequirements(Requirements):
     def requirements_file(self):
         return 'package.json'
 
-    def collect(self, sb, source_path):
-        sb.import_path(os.path.join(source_path, 'package.json'))
+    def collect(self, sb):
+        sb.import_path(os.path.join(self._source_path(), 'package.json'))
         sb.run_command('npm install --production >/dev/null 2>&1')
 
 class Packager:
@@ -114,7 +121,7 @@ class Packager:
             raise Exception("Unknown code type '{}'".format(self.code_type()))
 
     def _requirements(self):
-        return self._requirements_class()()
+        return self._requirements_class()(self.code)
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
@@ -136,8 +143,7 @@ class Packager:
         requirements_file = os.path.join(os.getcwd(), self.requirements_file())
         if not os.path.isfile(requirements_file):
             return
-        source_dir = os.path.join(os.getcwd(), os.path.dirname(self.code))
-        self._requirements().collect(sb, source_dir)
+        self._requirements().collect(sb)
 
     def package(self):
         sb = Sandbox()
