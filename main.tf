@@ -1,7 +1,7 @@
 variable "basename" {}
 
 data "external" "lambda_packager" {
-  program = [ "${path.module}/pacakger.py" ]
+  program = [ "${path.module}/packager.py" ]
   query = {
     basename = "${var.basename}"
   }
