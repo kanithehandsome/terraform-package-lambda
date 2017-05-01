@@ -1,6 +1,7 @@
 import unittest
 import packager
 import zipfile
+import time
 
 def do(input_values):
     p = packager.Packager(input_values)
@@ -20,6 +21,12 @@ class TestPackager(unittest.TestCase):
     def test_packages_a_python_script_with_no_dependencies(self):
         result = do({"code": "test/python-simple/foo.py"})
         self.assertEquals(result["zip_contents"]["foo.py"], "# Hello, Python!\n")
+
+    def test_packaging_source_without_dependencies_twice_produces_the_same_hash(self):
+        result1 = do({"code": "test/python-simple/foo.py"})
+        time.sleep(2)
+        result2 = do({"code": "test/python-simple/foo.py"})
+        self.assertEquals(result1["output"]["output_base64sha256"], result2["output"]["output_base64sha256"])
 
     def test_uses_specified_output_filename(self):
         result = do({

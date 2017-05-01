@@ -19,6 +19,8 @@ class Sandbox:
     We import files, write new files, and run commands in the Sandbox to
     produce the image we want to zip for the lambda.
     '''
+    FILE_STRING_MTIME = 1493649512
+
     def __init__(self):
         self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
 
@@ -33,11 +35,13 @@ class Sandbox:
         if os.path.isdir(path):
             shutil.copytree(path, os.path.join(self.dir, os.path.basename(path)))
         else:
-            shutil.copy(path, self.dir)
+            shutil.copy2(path, self.dir)
 
     def add_file_string(self, path, contents):
-        with open(os.path.join(self.dir, path), 'w') as f:
+        full_path = os.path.join(self.dir, path)
+        with open(full_path, 'w') as f:
             f.write(contents)
+        os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
 
     def _zip_visit(self, zf, dirname, names):
         for name in names:
