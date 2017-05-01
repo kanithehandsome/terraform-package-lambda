@@ -83,6 +83,8 @@ class PythonRequirements(Requirements):
 
     def collect(self, sb):
         requirements_file = os.path.join(self._source_path(), self.requirements_file())
+        if not os.path.isfile(requirements_file):
+            return
         mtime = os.stat(requirements_file).st_mtime
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         files_before = set(sb.files())
@@ -100,7 +102,10 @@ class NodeRequirements(Requirements):
         return 'package.json'
 
     def collect(self, sb):
-        sb.import_path(os.path.join(self._source_path(), 'package.json'))
+        requirements_file = os.path.join(self._source_path(), self.requirements_file())
+        if not os.path.isfile(requirements_file):
+            return
+        sb.import_path(os.path.join(self._source_path(), self.requirements_file()))
         sb.run_command('npm install --production >/dev/null 2>&1')
 
 class Packager:
@@ -128,10 +133,6 @@ class Packager:
             return self.input['output_filename']
         return os.path.splitext(self.code)[0] + ".zip"
 
-    def requirements_file(self):
-        source_dir = os.path.dirname(self.code)
-        return os.path.join(source_dir, self._requirements().requirements_file())
-
     def paths_to_import(self):
         yield self.code
         source_dir = os.path.dirname(self.code)
@@ -139,17 +140,11 @@ class Packager:
             for extra_file in self.input["extra_files"]:
                 yield os.path.join(source_dir, extra_file)
 
-    def _add_requirements(self, sb):
-        requirements_file = os.path.join(os.getcwd(), self.requirements_file())
-        if not os.path.isfile(requirements_file):
-            return
-        self._requirements().collect(sb)
-
     def package(self):
         sb = Sandbox()
         for path in self.paths_to_import():
             sb.import_path(path)
-        self._add_requirements(sb)
+        self._requirements().collect(sb)
         sb.zip(self.output_filename())
         sb.delete()
 
