@@ -140,7 +140,7 @@ class Packager:
         self.code = self.input["code"]
 
     def output_filename(self):
-        if self.input.has_key('output_filename'):
+        if self.input.get('output_filename', '') != '':
             return self.input['output_filename']
         return os.path.splitext(self.code)[0] + ".zip"
 

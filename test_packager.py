@@ -4,6 +4,10 @@ import zipfile
 import time
 
 def do(input_values):
+    if not input_values.has_key("output_filename"):
+        input_values["output_filename"] = ""
+    if not input_values.has_key("extra_files"):
+        input_values["extra_files"] = []
     p = packager.Packager(input_values)
     p.package()
     output = p.output()
