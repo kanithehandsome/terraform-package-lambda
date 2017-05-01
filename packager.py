@@ -83,6 +83,16 @@ class Requirements:
     def _requirements_mtime(self):
         return os.stat(self._source_requirements_file()).st_mtime
 
+    @staticmethod
+    def requirements(code):
+        code_type = os.path.splitext(code)[1]
+        if code_type == '.py':
+            return PythonRequirements(code)
+        elif code_type == '.js':
+            return NodeRequirements(code)
+        else:
+            raise Exception("Unknown code type '{}'".format(code_type))
+
 class PythonRequirements(Requirements):
     def _requirements_file(self):
         return 'requirements.txt'
@@ -119,21 +129,6 @@ class Packager:
         self.input = input_values
         self.code = self.input["code"]
 
-    def code_type(self):
-        return os.path.splitext(self.code)[1]
-
-    def _requirements_class(self):
-        code_type = self.code_type()
-        if code_type == '.py':
-            return PythonRequirements
-        elif code_type == '.js':
-            return NodeRequirements
-        else:
-            raise Exception("Unknown code type '{}'".format(self.code_type()))
-
-    def _requirements(self):
-        return self._requirements_class()(self.code)
-
     def output_filename(self):
         if self.input.has_key('output_filename'):
             return self.input['output_filename']
@@ -150,7 +145,7 @@ class Packager:
         sb = Sandbox()
         for path in self.paths_to_import():
             sb.import_path(path)
-        self._requirements().collect(sb)
+        Requirements.requirements(self.code).collect(sb)
         sb.zip(self.output_filename())
         sb.delete()
 
