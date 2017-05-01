@@ -104,14 +104,17 @@ class Packager:
     def code_type(self):
         return os.path.splitext(self.code)[1]
 
-    def requirements(self):
+    def _requirements_class(self):
         code_type = self.code_type()
         if code_type == '.py':
-            return PythonRequirements()
+            return PythonRequirements
         elif code_type == '.js':
-            return NodeRequirements()
+            return NodeRequirements
         else:
             raise Exception("Unknown code type '{}'".format(self.code_type()))
+
+    def _requirements(self):
+        return self._requirements_class()()
 
     def output_filename(self):
         if self.input.has_key('output_filename'):
@@ -120,7 +123,7 @@ class Packager:
 
     def requirements_file(self):
         source_dir = os.path.dirname(self.code)
-        return os.path.join(source_dir, self.requirements().requirements_file())
+        return os.path.join(source_dir, self._requirements().requirements_file())
 
     def paths_to_import(self):
         yield self.code
@@ -134,7 +137,7 @@ class Packager:
         if not os.path.isfile(requirements_file):
             return
         source_dir = os.path.join(os.getcwd(), os.path.dirname(self.code))
-        self.requirements().collect(sb, source_dir)
+        self._requirements().collect(sb, source_dir)
 
     def package(self):
         sb = Sandbox()
