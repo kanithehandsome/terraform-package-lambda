@@ -29,7 +29,7 @@ resource "aws_lambda_function" "my_lambda" {
 }
 ```
 
-## Repetability
+## Repeatability
 
 `terraform-package-lambda` tries really hard to make packages *repeatable* by
 working around quirks in both `pip` (compile times embedded in the `.pyc`
