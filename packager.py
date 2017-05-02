@@ -155,7 +155,7 @@ class Packager:
             self.extra_files = self.input['extra_files'].split(',')
 
     def output_filename(self):
-        if self.input.get('output_filename', '') != '':
+        if self.input.get('output_filename', None) != None:
             return self.input['output_filename']
         return os.path.splitext(self.code)[0] + ".zip"
 
