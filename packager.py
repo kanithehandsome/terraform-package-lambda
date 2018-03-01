@@ -9,9 +9,10 @@ import os.path
 import json
 import shutil
 import hashlib
-import base64
 import tempfile
 import zipfile
+import subprocess
+
 
 class Sandbox:
     '''
@@ -23,7 +24,7 @@ class Sandbox:
     FILE_STRING_MTIME = 1493649512
 
     def __init__(self):
-        self.dir = tempfile.mkdtemp(suffix = 'lambda-packager')
+        self.dir = tempfile.mkdtemp(suffix='lambda-packager')
 
     def run_command(self, cmd):
         cwd = os.getcwd()
@@ -34,7 +35,8 @@ class Sandbox:
 
     def import_path(self, path):
         if os.path.isdir(path):
-            shutil.copytree(path, os.path.join(self.dir, os.path.basename(path)))
+            shutil.copytree(path, os.path.join(
+                self.dir, os.path.basename(path)))
         else:
             shutil.copy2(path, self.dir)
 
@@ -44,18 +46,23 @@ class Sandbox:
             f.write(contents)
         os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
 
-    def _files_visit(self, result, dirname, names):
-        for name in names:
-            src = os.path.join(dirname, name)
-            if dirname == self.dir:
-                dst = name
-            else:
-                dst = os.path.join(dirname[len(self.dir)+1:], name)
-            result.append(dst)
-
     def files(self):
-        result = []
-        os.walk(self.dir, self._files_visit, result)
+        result = []        
+        for root, dirs, files in os.walk(self.dir):
+            for name in files:
+                count = count + 1
+                if root == self.dir:
+                    dest = name
+                else:
+                    #raise Exception("self : {}, dst : {}".format(self.dir, root[len(self.dir)+1:]))
+                    dest = os.path.join(root[len(self.dir) + 1:], name)
+                result.append(dest)
+            for name in dirs:
+                if root == self.dir:
+                    dest = name
+                else:
+                    dest = os.path.join(root[len(self.dir) + 1:], name)
+                result.append(dest)
         return result
 
     def zip(self, output_filename):
@@ -73,6 +80,7 @@ class Sandbox:
 
 class SandboxMtimeDecorator:
     '''A decorator for Sandbox which sets all files newly created by some command to `mtime'.'''
+
     def __init__(self, sb, mtime):
         self.sb = sb
         self.mtime = mtime
@@ -84,7 +92,10 @@ class SandboxMtimeDecorator:
     def run_command(self, cmd):
         self.sb.run_command(cmd)
         for filename in set(self.sb.files()).difference(self.before_files):
-            os.utime(os.path.join(self.sb.dir, filename), (self.mtime, self.mtime))
+            if os.path.exists(os.path.join(self.sb.dir, filename)):
+                os.utime(os.path.join(self.sb.dir, filename),
+                         (self.mtime, self.mtime))
+
 
 class RequirementsCollector:
     def __init__(self, code):
@@ -109,6 +120,7 @@ class RequirementsCollector:
         else:
             raise Exception("Unknown code type '{}'".format(code_type))
 
+
 class PythonRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'requirements.txt'
@@ -120,8 +132,11 @@ class PythonRequirementsCollector(RequirementsCollector):
         mtime = self._requirements_mtime()
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         sbm = SandboxMtimeDecorator(sb, mtime)
-        sbm.run_command('pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
-        sbm.run_command('python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
+        sbm.run_command(
+            'pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+        sbm.run_command(
+            'python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
+
 
 class NodeRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
@@ -145,6 +160,7 @@ class NodeRequirementsCollector(RequirementsCollector):
             with open(full_path, 'wb') as f:
                 f.write(contents)
             os.utime(full_path, (mtime, mtime))
+
 
 class Packager:
     def __init__(self, input_values):
@@ -174,22 +190,25 @@ class Packager:
         sb.delete()
 
     def output_base64sha256(self):
-        print(self.output_filename())
+        sys.stderr.write(self.output_filename())
         with open(self.output_filename(), 'rb') as f:
             contents = f.read()
-        return base64.b64encode(hashlib.sha256(contents).digest())
+        hash_value = hashlib.sha256(contents).hexdigest()
+        return hash_value
 
     def output(self):
         return {
-          "code": self.code,
-          "output_filename": self.output_filename(),
-          "output_base64sha256": self.output_base64sha256()
+            "code": self.code,
+            "output_filename": self.output_filename(),
+            "output_base64sha256": self.output_base64sha256()
         }
+
 
 def main():
     packager = Packager(json.load(sys.stdin))
     packager.package()
     json.dump(packager.output(), sys.stdout)
 
-if __name__=='__main__':
+
+if __name__ == '__main__':
     main()
