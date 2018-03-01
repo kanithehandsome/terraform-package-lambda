@@ -174,7 +174,7 @@ class Packager:
         sb.delete()
 
     def output_base64sha256(self):
-        with open(self.output_filename(), 'r') as f:
+        with open(self.output_filename(), 'r', encoding='utf-8') as f:
             contents = f.read()
         return base64.b64encode(hashlib.sha256(contents).digest())
 
