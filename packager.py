@@ -47,10 +47,9 @@ class Sandbox:
         os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
 
     def files(self):
-        result = []        
+        result = []
         for root, dirs, files in os.walk(self.dir):
             for name in files:
-                count = count + 1
                 if root == self.dir:
                     dest = name
                 else:
