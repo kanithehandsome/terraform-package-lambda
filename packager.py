@@ -55,7 +55,7 @@ class Sandbox:
 
     def files(self):
         result = []
-        os.path.walk(self.dir, self._files_visit, result)
+        os.walk(self.dir, self._files_visit, result)
         return result
 
     def zip(self, output_filename):
