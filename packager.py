@@ -60,9 +60,12 @@ class Sandbox:
             for name in dirs:
                 if root == self.dir:
                     dest = name
+                    result.append(dest)
                 else:
                     dest = os.path.join(root[len(self.dir) + 1:], name)
                 result.append(dest)
+        result = list(set(result))
+        result.sort()
         return result
 
     def zip(self, output_filename):
@@ -156,7 +159,7 @@ class NodeRequirementsCollector(RequirementsCollector):
             mtime = os.stat(full_path).st_mtime
             with open(full_path, 'rb') as f:
                 contents = f.read()
-            contents = contents.replace(str(sb.dir), '/tmp/lambda-package')
+            contents = contents.replace(sb.dir.encode('utf-8'), '/tmp/lambda-package'.encode('utf-8'))
             with open(full_path, 'wb') as f:
                 f.write(contents)
             os.utime(full_path, (mtime, mtime))
