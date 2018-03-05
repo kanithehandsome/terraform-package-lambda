@@ -211,6 +211,8 @@ class Packager:
                     with open(check_file, 'rb') as f:
                         for block in iter(lambda: f.read(block_size), b''):
                             sha256.update(block)
+                else:
+                    raise Exception("File not found: {}".format(check_file))
             hash_b64= base64.b64encode(sha256.digest()).decode('utf-8')
         return hash_b64
 
