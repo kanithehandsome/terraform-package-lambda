@@ -170,9 +170,6 @@ class Packager:
         self.input = input_values
         self.code = self.input["code"]
         self.extra_files = []
-        self.partial_hash = False
-        if self.input.get('partial_hash', 'true') == 'true':
-            self.partial_hash = True
 
         if len(self.input.get('extra_files', '')) > 0:
             self.extra_files = self.input['extra_files'].split(',')
@@ -199,21 +196,10 @@ class Packager:
     def output_base64sha256(self):
         sha256 = hashlib.sha256()
         block_size=65536
-        if not self.partial_hash:
-            with open(self.output_filename(), 'rb') as f:
-                for block in iter(lambda: f.read(block_size), b''):
-                    sha256.update(block)
-            hash_b64= base64.b64encode(sha256.digest()).decode('utf-8')
-        else:
-            check_files = [self.code]+self.extra_files
-            for check_file in check_files:
-                if  check_file and os.path.isfile(check_file):
-                    with open(check_file, 'rb') as f:
-                        for block in iter(lambda: f.read(block_size), b''):
-                            sha256.update(block)
-                else:
-                    raise Exception("File not found: {}".format(check_file))
-            hash_b64= base64.b64encode(sha256.digest()).decode('utf-8')
+        with open(self.output_filename(), 'rb') as f:
+            for block in iter(lambda: f.read(block_size), b''):
+                sha256.update(block)
+        hash_b64= base64.b64encode(sha256.digest()).decode('utf-8')
         return hash_b64
 
     def output(self):
