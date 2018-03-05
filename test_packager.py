@@ -10,8 +10,6 @@ def do(input_values):
         input_values["output_filename"] = ""
     if not "extra_files" in input_values:
         input_values["extra_files"] = ''
-    if not 'partial_hash' in input_values:
-        input_values['partial_hash'] = 'false'
     p = packager.Packager(input_values)
     p.package()
     output = p.output()
@@ -62,9 +60,9 @@ class TestPackager(unittest.TestCase):
         self.assertTrue("mock/__init__.py" in result["zip_contents"])
 
     def test_packaging_python_with_requirements_twice_produces_the_same_hsah(self):
-        result1 = do({"code": "test/python-deps/foo.py", "partial_hash": "true"})
+        result1 = do({"code": "test/python-deps/foo.py"})
         time.sleep(2) # Allow for current time to "infect" result
-        result2 = do({"code": "test/python-deps/foo.py", "partial_hash": "true"})
+        result2 = do({"code": "test/python-deps/foo.py"})
         self.assertEqual(result1["output"]["output_base64sha256"], result2["output"]["output_base64sha256"])
 
     def test_packages_a_node_script_with_no_dependencies(self):
