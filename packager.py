@@ -12,6 +12,7 @@ import hashlib
 import tempfile
 import zipfile
 import subprocess
+import base64
 
 
 class Sandbox:
@@ -190,10 +191,12 @@ class Packager:
 
     def output_base64sha256(self):
         sys.stderr.write(self.output_filename())
+        sha256 = hashlib.sha256()
+        block_size=65536
         with open(self.output_filename(), 'rb') as f:
-            contents = f.read()
-        hash_value = hashlib.sha256(contents).hexdigest()
-        return hash_value
+            for block in iter(lambda: f.read(block_size), b''):
+                sha256.update(block)
+        return sha256.hexdigest()
 
     def output(self):
         return {
