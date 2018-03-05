@@ -13,7 +13,7 @@ import tempfile
 import zipfile
 import subprocess
 import base64
-
+import shutil
 
 class Sandbox:
     '''
@@ -47,6 +47,9 @@ class Sandbox:
             f.write(contents)
         os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
 
+    def fix_time(self, full_path):
+        os.utime(full_path, (self.FILE_STRING_MTIME, self.FILE_STRING_MTIME))
+
     def files(self):
         result = []
         for root, dirs, files in os.walk(self.dir):
@@ -74,11 +77,28 @@ class Sandbox:
             zf.write(os.path.join(self.dir, filename), filename)
         zf.close()
 
+
     def delete(self):
         try:
             shutil.rmtree(self.dir)
         except:
             pass
+
+    def rewrite_python_dist_info_record(self):
+        for root, dirs, files in os.walk(self.dir):
+            for f in files:
+                if f == 'RECORD':
+                    #raise Exception('record filename: {}'.format(f))
+                    if root.endswith('.dist-info'):
+                        fpath = os.path.join(root, f)
+                        with open(fpath, 'r') as rf:
+                            lines = sorted(rf.readlines())
+                        self.add_file_string(fpath, os.linesep.join(lines))
+            for dir in dirs:
+                if dir == '__pycache__':
+                    shutil.rmtree(os.path.join(root,dir))
+                    self.fix_time(root)
+
 
 
 class SandboxMtimeDecorator:
@@ -128,6 +148,8 @@ class PythonRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'requirements.txt'
 
+
+
     def collect(self, sb):
         requirements_file = self._source_requirements_file()
         if not os.path.isfile(requirements_file):
@@ -136,9 +158,10 @@ class PythonRequirementsCollector(RequirementsCollector):
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         sbm = SandboxMtimeDecorator(sb, mtime)
         sbm.run_command(
-            'pip install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+            'pip3 install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
         sbm.run_command(
             'python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
+        sbm.rewrite_python_dist_info_record()
 
 
 class NodeRequirementsCollector(RequirementsCollector):
@@ -195,10 +218,8 @@ class Packager:
 
     def output_base64sha256(self):
         sha256 = hashlib.sha256()
-        block_size=65536
         with open(self.output_filename(), 'rb') as f:
-            for block in iter(lambda: f.read(block_size), b''):
-                sha256.update(block)
+            sha256.update(f.read())
         hash_b64= base64.b64encode(sha256.digest()).decode('utf-8')
         return hash_b64
 
