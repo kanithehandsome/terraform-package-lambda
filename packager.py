@@ -196,7 +196,7 @@ class Packager:
         with open(self.output_filename(), 'rb') as f:
             for block in iter(lambda: f.read(block_size), b''):
                 sha256.update(block)
-        return sha256.hexdigest()
+        return base64.standard_b64decode(sha256.hexdigest())
 
     def output(self):
         return {
