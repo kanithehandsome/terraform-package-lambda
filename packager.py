@@ -14,6 +14,7 @@ import zipfile
 import subprocess
 import base64
 import shutil
+import functools
 
 class Sandbox:
     '''
@@ -85,6 +86,7 @@ class Sandbox:
             pass
 
     def rewrite_python_dist_info_record(self):
+        # pylint: disable=unused-variable
         for root, dirs, files in os.walk(self.dir):
             for f in files:
                 if f == 'RECORD':
@@ -94,12 +96,23 @@ class Sandbox:
                         with open(fpath, 'r') as rf:
                             lines = sorted(rf.readlines())
                         self.add_file_string(fpath, os.linesep.join(lines))
+
+
+    def clean_pycache(self):
+        # pylint: disable=unused-variable
+        for root, dirs, files in os.walk(self.dir):
             for dir in dirs:
                 if dir == '__pycache__':
                     shutil.rmtree(os.path.join(root,dir))
                     self.fix_time(root)
 
-
+    def clean_setup_tool(self):
+        # pylint: disable=unused-variable
+        for root, dirs, files in os.walk(self.dir):
+            for dir in dirs:
+                if dir.startswith('setuptools'):
+                    shutil.rmtree(os.path.join(root,dir))
+                    self.fix_time(root)
 
 class SandboxMtimeDecorator:
     '''A decorator for Sandbox which sets all files newly created by some command to `mtime'.'''
@@ -107,6 +120,9 @@ class SandboxMtimeDecorator:
     def __init__(self, sb, mtime):
         self.sb = sb
         self.mtime = mtime
+        # use fixed time, avoid scenario, if we clone lamba source repo, the requirements mtime will change
+        # though nothing may be changed
+        #self.mtime = sb.FILE_STRING_MTIME
         self.before_files = set(self.sb.files())
 
     def __getattr__(self, name):
@@ -114,10 +130,15 @@ class SandboxMtimeDecorator:
 
     def run_command(self, cmd):
         self.sb.run_command(cmd)
+        all_paths =[]
         for filename in set(self.sb.files()).difference(self.before_files):
             if os.path.exists(os.path.join(self.sb.dir, filename)):
-                os.utime(os.path.join(self.sb.dir, filename),
-                         (self.mtime, self.mtime))
+                all_paths.append(os.path.join(self.sb.dir, filename))
+
+        #sort the path so parent timestamp not changed after children
+        sorted_paths =sorted(all_paths, key=lambda p : p.count(os.path.sep), reverse=True)
+        for path in sorted_paths:
+            os.utime(path,(self.mtime, self.mtime))
 
 
 class RequirementsCollector:
@@ -128,6 +149,7 @@ class RequirementsCollector:
         return os.path.join(os.getcwd(), os.path.dirname(self.code))
 
     def _source_requirements_file(self):
+        # pylint: disable=no-member
         return os.path.join(self._source_path(), self._requirements_file())
 
     def _requirements_mtime(self):
@@ -148,8 +170,6 @@ class PythonRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'requirements.txt'
 
-
-
     def collect(self, sb):
         requirements_file = self._source_requirements_file()
         if not os.path.isfile(requirements_file):
@@ -157,11 +177,17 @@ class PythonRequirementsCollector(RequirementsCollector):
         mtime = self._requirements_mtime()
         sb.add_file_string('setup.cfg', "[install]\nprefix=\n")
         sbm = SandboxMtimeDecorator(sb, mtime)
+        # before files initialized
         sbm.run_command(
             'pip3 install -r {} -t {}/ >/dev/null'.format(requirements_file, sb.dir))
+
+        # set time.time() result to a fixed time
         sbm.run_command(
-            'python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(mtime))
-        sbm.rewrite_python_dist_info_record()
+            'python -c \'import time, compileall; time.time = lambda: {}; compileall.compile_dir(".", force=True)\' >/dev/null'.format(sb.FILE_STRING_MTIME))
+
+        sb.rewrite_python_dist_info_record()
+        #remove setup tools, not needed
+        sb.clean_setup_tool()
 
 
 class NodeRequirementsCollector(RequirementsCollector):
