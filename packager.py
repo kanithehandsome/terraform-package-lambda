@@ -219,7 +219,7 @@ class RubyRequirementsCollector(RequirementsCollector):
     def _requirements_file(self):
         return 'Gemfile.lock'
 
-    def collect2(self, sb):
+    def collect(self, sb):
         requirements_file = self._source_requirements_file()
         if not os.path.isfile(requirements_file):
             return
