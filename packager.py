@@ -225,6 +225,7 @@ class RubyRequirementsCollector(RequirementsCollector):
             return
         sb.import_path(self._source_requirements_file())
         sbm = SandboxMtimeDecorator(sb, self._requirements_mtime())
+        sbm.run_command('mkdir vendor')
         sbm.run_command('rbenv exec bundle install --path vendor/bundle --deployment')
         for filename in sbm.files():
             if not filename.endswith('Gemfile'):
