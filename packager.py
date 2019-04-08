@@ -215,18 +215,6 @@ class NodeRequirementsCollector(RequirementsCollector):
                 f.write(contents)
             os.utime(full_path, (mtime, mtime))
 
-class RubyRequirementsCollector(RequirementsCollector):
-    def _requirements_file(self):
-        return 'Gemfile'
-
-    def collect(self, sb):
-        requirements_file = self._source_requirements_file()
-        if not os.path.isfile(requirements_file):
-            return
-        sb.import_path(self._source_requirements_file())
-        sbm = SandboxMtimeDecorator(sb, self._requirements_mtime())
-        sbm.run_command('rbenv exec bundle install --path vendor/bundle --deployment')
-
 class Packager:
     def __init__(self, input_values):
         self.input = input_values
