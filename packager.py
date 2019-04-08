@@ -225,7 +225,7 @@ class RubyRequirementsCollector(RequirementsCollector):
             return
         sb.import_path(self._source_requirements_file())
         sbm = SandboxMtimeDecorator(sb, self._requirements_mtime())
-        sbm.run_command('rbenv exec bundle install --path vendor/bundle')
+        sbm.run_command('rbenv exec bundle install --path vendor/bundle --deployment')
 
 class Packager:
     def __init__(self, input_values):
