@@ -226,6 +226,17 @@ class RubyRequirementsCollector(RequirementsCollector):
         sb.import_path(self._source_requirements_file())
         sbm = SandboxMtimeDecorator(sb, self._requirements_mtime())
         sbm.run_command('rbenv exec bundle install --path vendor/bundle >/dev/null 2>&1 --deployment')
+        for filename in sbm.files():
+            if not filename.endswith('Gemfile'):
+                continue
+            full_path = os.path.join(sbm.dir, filename)
+            mtime = os.stat(full_path).st_mtime
+            with open(full_path, 'rb') as f:
+                contents = f.read()
+            contents = contents.replace(sb.dir.encode('utf-8'), '/tmp/lambda-package'.encode('utf-8'))
+            with open(full_path, 'wb') as f:
+                f.write(contents)
+            os.utime(full_path, (mtime, mtime))
 
 class Packager:
     def __init__(self, input_values):
